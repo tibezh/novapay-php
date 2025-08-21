@@ -16,7 +16,7 @@ PHP library for integration with NovaPay payment system. Supports direct payment
 - ✅ RSA signature security
 - ✅ Sandbox and production environment support
 - ✅ Callback request validation
-- ✅ PHP 8.1+ compatibility
+- ✅ PHP 8.3+ compatibility
 
 ## Installation
 
@@ -270,7 +270,7 @@ return [
 
 ## System Requirements
 
-- PHP >= 8.1
+- PHP >= 8.3
 - ext-openssl
 - ext-curl
 - ext-json
@@ -285,7 +285,7 @@ composer install
 composer test
 
 # Fix code style
-composer cs-fix
+composer lint-fix
 ```
 
 ## Contributing

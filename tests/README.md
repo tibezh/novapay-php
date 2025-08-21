@@ -208,7 +208,7 @@ Tests are designed to run in CI environments:
 
 ## Requirements
 
-- PHP 8.1+
+- PHP 8.3+
 - PHPUnit 12.0+
 - ext-openssl (for RSA operations)
 - ext-json (for data serialization)
