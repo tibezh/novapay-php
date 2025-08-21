@@ -1,2 +1,18 @@
+# Libraries
 /vendor/
+
+# Composer lock
+composer.lock
+
+# PHPStorm folder
 .idea
+
+# Test generated files
+keys/
+temp/
+logs/
+*.log
+
+# PHPUnit generated files
+.phpunit.result.cache
+build/
