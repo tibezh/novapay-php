@@ -4,6 +4,7 @@ PHP library for integration with NovaPay payment system. Supports direct payment
 
 [![Latest Version](https://img.shields.io/packagist/v/tibezh/novapay-php.svg)](https://packagist.org/packages/tibezh/novapay-php)
 [![License](https://img.shields.io/packagist/l/tibezh/novapay-php.svg)](https://github.com/tibezh/novapay-php/blob/main/LICENSE)
+[![CI](https://github.com/tibezh/novapay-php/actions/workflows/ci.yml/badge.svg)](https://github.com/tibezh/novapay-php/actions/workflows/ci.yml)
 [![PHP Version](https://img.shields.io/packagist/php-v/tibezh/novapay-php.svg)](https://packagist.org/packages/tibezh/novapay-php)
 
 [Українська версія](README.ua.md) | [Documentation](https://github.com/tibezh/novapay-php/wiki)
@@ -312,7 +313,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Examples
 
-More usage examples can be found in the `examples/` directory (coming soon).
+More usage examples can be found in the `examples/` directory.
 
 ---
 
