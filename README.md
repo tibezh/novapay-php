@@ -3,7 +3,7 @@
 PHP library for integration with NovaPay payment system. Supports direct payments, hold payments, and secure purchases with Nova Poshta delivery integration.
 
 [![Latest Version](https://img.shields.io/packagist/v/tibezh/novapay-php.svg)](https://packagist.org/packages/tibezh/novapay-php)
-[![License](https://img.shields.io/packagist/l/tibezh/novapay-php.svg)](https://github.com/tibezh/novapay-php/blob/main/LICENSE)
+[![License](https://img.shields.io/packagist/l/tibezh/novapay-php.svg)](https://github.com/tibezh/novapay-php/blob/master/LICENSE)
 [![CI](https://github.com/tibezh/novapay-php/actions/workflows/ci.yml/badge.svg)](https://github.com/tibezh/novapay-php/actions/workflows/ci.yml)
 [![PHP Version](https://img.shields.io/packagist/php-v/tibezh/novapay-php.svg)](https://packagist.org/packages/tibezh/novapay-php)
 

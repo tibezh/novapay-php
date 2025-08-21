@@ -3,7 +3,7 @@
 PHP бібліотека для інтеграції з платіжною системою NovaPay. Підтримує прямі платежі, платежі з утриманням коштів та надійні покупки з доставкою Нова Пошта.
 
 [![Latest Version](https://img.shields.io/packagist/v/tibezh/novapay-php.svg)](https://packagist.org/packages/tibezh/novapay-php)
-[![License](https://img.shields.io/packagist/l/tibezh/novapay-php.svg)](https://github.com/tibezh/novapay-php/blob/main/LICENSE)
+[![License](https://img.shields.io/packagist/l/tibezh/novapay-php.svg)](https://github.com/tibezh/novapay-php/blob/master/LICENSE)
 [![PHP Version](https://img.shields.io/packagist/php-v/tibezh/novapay-php.svg)](https://packagist.org/packages/tibezh/novapay-php)
 
 [English version](README.md) | [Документація](https://github.com/tibezh/novapay-php/wiki)
