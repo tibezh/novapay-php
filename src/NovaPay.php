@@ -34,7 +34,11 @@ class NovaPay
         bool $sandbox = true
     ) {
         $this->merchantId = $merchantId;
-        $this->privateKey = $this->loadKey($privateKey);
+        $privateKey = $this->loadKey($privateKey);
+        if (!$privateKey) {
+            throw new NovaPayException('Private key not found');
+        }
+        $this->privateKey = $privateKey;
         $this->publicKey = $publicKey;
         $this->baseUrl = $sandbox ? self::SANDBOX_URL : self::PRODUCTION_URL;
         $this->signature = new Signature($this->privateKey, $this->publicKey);
@@ -42,6 +46,10 @@ class NovaPay
 
     /**
      * Create payment session
+     *
+     * @param array<string, mixed> $data
+     *
+     * @return array<string, mixed>
      */
     public function createSession(array $data): array
     {
@@ -51,6 +59,11 @@ class NovaPay
 
     /**
      * Add payment to session
+     *
+     * @param string $sessionId
+     * @param array<string, mixed> $data
+     *
+     * @return array<string, mixed>
      */
     public function addPayment(string $sessionId, array $data): array
     {
@@ -60,6 +73,8 @@ class NovaPay
 
     /**
      * Complete hold payment
+     *
+     * @return array<string, mixed>
      */
     public function completeHold(string $sessionId, ?float $amount = null): array
     {
@@ -72,6 +87,8 @@ class NovaPay
 
     /**
      * Confirm delivery for secure purchase
+     *
+     * @return array<string, mixed>
      */
     public function confirmDelivery(string $sessionId): array
     {
@@ -82,6 +99,8 @@ class NovaPay
 
     /**
      * Void (cancel/refund) payment
+     *
+     * @return array<string, mixed>
      */
     public function void(string $sessionId): array
     {
@@ -92,6 +111,8 @@ class NovaPay
 
     /**
      * Get payment status
+     *
+     * @return array<string, mixed>
      */
     public function getStatus(string $sessionId): array
     {
@@ -102,6 +123,8 @@ class NovaPay
 
     /**
      * Verify callback signature
+     *
+     * @param array<string, mixed> $data
      */
     public function verifyCallback(array $data, string $signature): bool
     {
@@ -110,6 +133,11 @@ class NovaPay
 
     /**
      * Make HTTP request to NovaPay API
+     *
+     * @param string $endpoint
+     * @param array<string, mixed> $data
+     *
+     * @return array<string, mixed>
      */
     private function makeRequest(string $endpoint, array $data): array
     {
@@ -141,7 +169,7 @@ class NovaPay
 
         curl_close($ch);
 
-        $decodedResponse = json_decode($response, true);
+        $decodedResponse = json_decode((string) $response, true);
 
         if ($httpCode !== 200) {
             throw new NovaPayException(
@@ -155,10 +183,11 @@ class NovaPay
     /**
      * Load private key from file or string
      */
-    private function loadKey(string $key): string
+    private function loadKey(string $key): ?string
     {
         if (file_exists($key)) {
-            return file_get_contents($key);
+            $contents = file_get_contents($key);
+            return is_string($contents) ? $contents : null;
         }
         return $key;
     }

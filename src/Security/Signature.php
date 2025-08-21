@@ -22,6 +22,8 @@ class Signature
 
     /**
      * Create signature for request data
+     *
+     * @param array<string, mixed> $data
      */
     public function createSignature(array $data): string
     {
@@ -44,6 +46,8 @@ class Signature
 
     /**
      * Verify signature from NovaPay callback
+     *
+     * @param array<string, mixed> $data
      */
     public function verifySignature(array $data, string $signature): bool
     {
@@ -62,6 +66,8 @@ class Signature
 
     /**
      * Convert array to string for signature
+     *
+     * @param array<string, mixed> $data
      */
     private function arrayToString(array $data): string
     {

@@ -285,6 +285,9 @@ class NovaPayTest extends TestCase
         $this->assertInstanceOf(NovaPay::class, $novaPay);
     }
 
+    /**
+     * @return array<string, array<string>>
+     */
     public static function invalidMerchantIdProvider(): array
     {
         return [

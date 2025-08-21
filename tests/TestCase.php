@@ -18,7 +18,11 @@ abstract class TestCase extends PHPUnitTestCase
         // Generate test keys if they don't exist
         $this->ensureTestKeysExist();
 
-        return file_get_contents($this->getTestKeysPath() . '/private.key');
+        $contents = file_get_contents($this->getTestKeysPath() . '/private.key');
+        if (!$contents) {
+            throw new \RuntimeException('Failed to read private key');
+        }
+        return $contents;
     }
 
     protected function getTestPublicKey(): string
@@ -42,9 +46,16 @@ rwIDAQAB
         // This key is used for testing merchant's signature creation/verification
         $this->ensureTestKeysExist();
 
-        return file_get_contents($this->getTestKeysPath() . '/public.key');
+        $contents = file_get_contents($this->getTestKeysPath() . '/public.key');
+        if (!$contents) {
+            throw new \RuntimeException('Failed to read public key');
+        }
+        return $contents;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     protected function getTestSessionData(): array
     {
         return [
@@ -58,6 +69,9 @@ rwIDAQAB
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     protected function getTestDeliveryData(): array
     {
         return [
@@ -68,9 +82,12 @@ rwIDAQAB
         ];
     }
 
-    protected function mockHttpResponse(array $responseData, int $httpCode = 200): string
+    /**
+     * @param array<string, mixed> $responseData
+     */
+    protected function mockHttpResponse(array $responseData): string
     {
-        return json_encode($responseData);
+        return (string) json_encode($responseData);
     }
 
     private function getTestKeysPath(): string
@@ -116,6 +133,9 @@ rwIDAQAB
 
         // Export public key
         $keyDetails = openssl_pkey_get_details($resource);
+        if (!$keyDetails) {
+            throw new \RuntimeException('Failed to export public key');
+        }
         file_put_contents($publicKeyPath, $keyDetails['key']);
     }
 }
