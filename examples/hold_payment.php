@@ -26,44 +26,44 @@ rwIDAQAB
 ];
 
 try {
-  $novaPay = new NovaPay(
-    merchantId: $config['merchant_id'],
-    privateKey: $config['private_key'],
-    publicKey: $config['public_key'],
-    sandbox: $config['sandbox']
-  );
+    $novaPay = new NovaPay(
+        merchantId: $config['merchant_id'],
+        privateKey: $config['private_key'],
+        publicKey: $config['public_key'],
+        sandbox: $config['sandbox']
+    );
 
-  echo "Creating hold payment...\n";
+    echo "Creating hold payment...\n";
 
-  // Step 1: Create session
-  $session = $novaPay->createSession([
-    'external_id' => 'booking_' . time(),
-    'amount' => 250.00,
-    'currency' => 'UAH',
-    'description' => 'Hotel booking',
-    'success_url' => 'https://yoursite.com/success',
-    'fail_url' => 'https://yoursite.com/fail',
-    'callback_url' => 'https://yoursite.com/callback'
-  ]);
+    // Step 1: Create session
+    $session = $novaPay->createSession([
+      'external_id' => 'booking_' . time(),
+      'amount' => 250.00,
+      'currency' => 'UAH',
+      'description' => 'Hotel booking',
+      'success_url' => 'https://yoursite.com/success',
+      'fail_url' => 'https://yoursite.com/fail',
+      'callback_url' => 'https://yoursite.com/callback'
+    ]);
 
-  echo "Session created: {$session['session_id']}\n";
+    echo "Session created: {$session['session_id']}\n";
 
-  // Step 2: Add hold payment
-  $payment = $novaPay->addPayment($session['session_id'], [
-    'use_hold' => true
-  ]);
+    // Step 2: Add hold payment
+    $payment = $novaPay->addPayment($session['session_id'], [
+      'use_hold' => true
+    ]);
 
-  echo "Payment URL: {$payment['checkout_url']}\n";
-  echo "After customer pays, funds will be held.\n\n";
+    echo "Payment URL: {$payment['checkout_url']}\n";
+    echo "After customer pays, funds will be held.\n\n";
 
-  // Later: Complete the hold (charge the funds)
-  echo "To complete the payment later, use:\n";
-  echo "\$novaPay->completeHold('{$session['session_id']}');\n\n";
+    // Later: Complete the hold (charge the funds)
+    echo "To complete the payment later, use:\n";
+    echo "\$novaPay->completeHold('{$session['session_id']}');\n\n";
 
-  // Or cancel the hold
-  echo "To cancel the hold, use:\n";
-  echo "\$novaPay->void('{$session['session_id']}');\n";
+    // Or cancel the hold
+    echo "To cancel the hold, use:\n";
+    echo "\$novaPay->void('{$session['session_id']}');\n";
 
 } catch (NovaPayException $e) {
-  echo "Error: " . $e->getMessage() . "\n";
+    echo 'Error: ' . $e->getMessage() . "\n";
 }

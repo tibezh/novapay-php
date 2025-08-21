@@ -4,8 +4,9 @@
 # Composer lock
 composer.lock
 
-# PHPStorm folder
+# IDE folders and files
 .idea
+.DS_Store
 
 # Test generated files
 keys/
@@ -16,3 +17,7 @@ logs/
 # PHPUnit generated files
 .phpunit.result.cache
 build/
+
+# Other files
+.php-cs-fixer.cache
+.phpdoc

@@ -13,24 +13,24 @@ use Tibezh\NovapayPhp\Exceptions\NovaPayException;
 $config = require __DIR__ . '/config.php';
 
 try {
-  $novaPay = new NovaPay(
-    merchantId: $config['sandbox']['merchant_id'],
-    privateKey: $config['sandbox']['private_key'],
-    publicKey: $config['sandbox']['public_key'],
-    sandbox: $config['sandbox']['sandbox']
-  );
+    $novaPay = new NovaPay(
+        merchantId: $config['sandbox']['merchant_id'],
+        privateKey: $config['sandbox']['private_key'],
+        publicKey: $config['sandbox']['public_key'],
+        sandbox: $config['sandbox']['sandbox']
+    );
 
-  // Replace with actual session ID
-  $sessionId = 'your_session_id_here';
+    // Replace with actual session ID
+    $sessionId = 'your_session_id_here';
 
-  echo "Checking payment status for session: {$sessionId}\n";
+    echo "Checking payment status for session: {$sessionId}\n";
 
-  $status = $novaPay->getStatus($sessionId);
+    $status = $novaPay->getStatus($sessionId);
 
-  echo "Status: {$status['status']}\n";
-  echo "Amount: {$status['amount']} {$status['currency']}\n";
-  echo "External ID: {$status['external_id']}\n";
+    echo "Status: {$status['status']}\n";
+    echo "Amount: {$status['amount']} {$status['currency']}\n";
+    echo "External ID: {$status['external_id']}\n";
 
 } catch (NovaPayException $e) {
-  echo "Error: " . $e->getMessage() . "\n";
+    echo 'Error: ' . $e->getMessage() . "\n";
 }

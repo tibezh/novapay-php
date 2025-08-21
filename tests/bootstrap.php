@@ -18,7 +18,7 @@ date_default_timezone_set('UTC');
 
 // Disable output buffering for tests
 if (ob_get_level()) {
-  ob_end_clean();
+    ob_end_clean();
 }
 
 // Mock environment variables for testing
@@ -32,11 +32,11 @@ $testDirs = [
 ];
 
 foreach ($testDirs as $dir) {
-  if (!is_dir($dir)) {
-    mkdir($dir, 0755, true);
-  }
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
 }
 
 echo "🧪 NovaPay PHP Library Tests Bootstrap\n";
-echo "PHP Version: " . PHP_VERSION . "\n";
+echo 'PHP Version: ' . PHP_VERSION . "\n";
 echo "PHPUnit: Running tests...\n\n";

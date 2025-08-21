@@ -1,6 +1,5 @@
 <?php
 
-
 /**
  * Simple Direct Payment Example
  */
@@ -27,37 +26,37 @@ rwIDAQAB
 ];
 
 try {
-  // Initialize NovaPay
-  $novaPay = new NovaPay(
-    merchantId: $config['merchant_id'],
-    privateKey: $config['private_key'],
-    publicKey: $config['public_key'],
-    sandbox: $config['sandbox']
-  );
+    // Initialize NovaPay
+    $novaPay = new NovaPay(
+        merchantId: $config['merchant_id'],
+        privateKey: $config['private_key'],
+        publicKey: $config['public_key'],
+        sandbox: $config['sandbox']
+    );
 
-  echo "Creating direct payment...\n";
+    echo "Creating direct payment...\n";
 
-  // Step 1: Create session
-  $session = $novaPay->createSession([
-    'external_id' => 'order_' . time(),
-    'amount' => 99.99,
-    'currency' => 'UAH',
-    'description' => 'Test payment',
-    'success_url' => 'https://yoursite.com/success',
-    'fail_url' => 'https://yoursite.com/fail',
-    'callback_url' => 'https://yoursite.com/callback'
-  ]);
+    // Step 1: Create session
+    $session = $novaPay->createSession([
+      'external_id' => 'order_' . time(),
+      'amount' => 99.99,
+      'currency' => 'UAH',
+      'description' => 'Test payment',
+      'success_url' => 'https://yoursite.com/success',
+      'fail_url' => 'https://yoursite.com/fail',
+      'callback_url' => 'https://yoursite.com/callback'
+    ]);
 
-  echo "Session created: {$session['session_id']}\n";
+    echo "Session created: {$session['session_id']}\n";
 
-  // Step 2: Add direct payment
-  $payment = $novaPay->addPayment($session['session_id'], [
-    'use_hold' => false
-  ]);
+    // Step 2: Add direct payment
+    $payment = $novaPay->addPayment($session['session_id'], [
+      'use_hold' => false
+    ]);
 
-  echo "Payment URL: {$payment['checkout_url']}\n";
-  echo "Redirect customer to this URL to complete payment.\n";
+    echo "Payment URL: {$payment['checkout_url']}\n";
+    echo "Redirect customer to this URL to complete payment.\n";
 
 } catch (NovaPayException $e) {
-  echo "Error: " . $e->getMessage() . "\n";
+    echo 'Error: ' . $e->getMessage() . "\n";
 }
