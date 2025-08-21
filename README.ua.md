@@ -4,6 +4,8 @@ PHP бібліотека для інтеграції з платіжною си�
 
 [![Latest Version](https://img.shields.io/packagist/v/tibezh/novapay-php.svg)](https://packagist.org/packages/tibezh/novapay-php)
 [![License](https://img.shields.io/packagist/l/tibezh/novapay-php.svg)](https://github.com/tibezh/novapay-php/blob/master/LICENSE)
+[![CI](https://github.com/tibezh/novapay-php/actions/workflows/ci.yml/badge.svg)](https://github.com/tibezh/novapay-php/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/github/tibezh/novapay-php/graph/badge.svg?token=5TB5FZQB38)](https://codecov.io/github/tibezh/novapay-php)
 [![PHP Version](https://img.shields.io/packagist/php-v/tibezh/novapay-php.svg)](https://packagist.org/packages/tibezh/novapay-php)
 
 [English version](README.md) | [Документація](https://github.com/tibezh/novapay-php/wiki)
