@@ -15,9 +15,10 @@ PHP library for integration with NovaPay payment system. Supports direct payment
 - ✅ Direct payment processing
 - ✅ Hold payments with merchant confirmation
 - ✅ Secure purchases with Nova Poshta delivery integration
-- ✅ RSA signature security
+- ✅ RSA signature security with **encrypted private keys support**
 - ✅ Sandbox and production environment support
 - ✅ Callback request validation
+- ✅ Advanced key management utilities
 - ✅ PHP 8.3+ compatibility
 
 ## Installation
@@ -44,7 +45,113 @@ $novaPay = new NovaPay(
 );
 ```
 
-### 2. Direct Payment
+### 2. Using Encrypted Private Keys (Recommended for Production)
+
+```php
+use Tibezh\NovapayPhp\NovaPay;
+
+// With encrypted private key
+$novaPay = new NovaPay(
+    merchantId: 'your_merchant_id',
+    privateKey: '/path/to/encrypted/private.key',
+    publicKey: '-----BEGIN PUBLIC KEY-----...', // NovaPay public key
+    sandbox: true,
+    passphrase: 'your_secure_passphrase' // 🔐 Passphrase for encrypted key
+);
+```
+
+### 3. Environment Variables (Best Practice)
+
+```php
+// Store passphrase securely
+$passphrase = getenv('NOVAPAY_PASSPHRASE'); // or $_ENV['NOVAPAY_PASSPHRASE']
+
+$novaPay = new NovaPay(
+    merchantId: getenv('NOVAPAY_MERCHANT_ID'),
+    privateKey: getenv('NOVAPAY_PRIVATE_KEY_PATH'),
+    publicKey: getenv('NOVAPAY_PUBLIC_KEY'),
+    sandbox: getenv('NOVAPAY_SANDBOX') === 'true',
+    passphrase: $passphrase
+);
+```
+
+## RSA Key Management
+
+### Generate Encrypted Key Pair
+
+```php
+use Tibezh\NovapayPhp\Utils\KeyGenerator;
+
+// Generate strong passphrase
+$passphrase = KeyGenerator::generatePassphrase(32); // 32 characters with special chars
+
+// Generate encrypted key pair
+$keyPair = KeyGenerator::generateKeyPair(2048, $passphrase);
+
+echo "Private key encrypted: " . ($keyPair['encrypted'] ? 'Yes' : 'No') . "\n";
+echo "Passphrase: " . $passphrase . "\n";
+
+// Save keys securely
+file_put_contents('private_encrypted.key', $keyPair['private_key']);
+file_put_contents('public.key', $keyPair['public_key']);
+
+// ⚠️ Store passphrase securely (environment variables, key management systems)
+```
+
+### Encrypt Existing Key
+
+```php
+use Tibezh\NovapayPhp\Utils\KeyGenerator;
+
+// Encrypt existing unencrypted private key
+$unencryptedKey = file_get_contents('private_unencrypted.key');
+$passphrase = 'my_secure_passphrase_2024!';
+
+$encryptedKey = KeyGenerator::encryptPrivateKey($unencryptedKey, $passphrase);
+file_put_contents('private_encrypted.key', $encryptedKey);
+```
+
+### Key Validation and Info
+
+```php
+use Tibezh\NovapayPhp\Utils\KeyGenerator;
+
+$privateKey = file_get_contents('private.key');
+
+// Check if key is encrypted
+$isEncrypted = KeyGenerator::isPrivateKeyEncrypted($privateKey);
+echo "Key is encrypted: " . ($isEncrypted ? 'Yes' : 'No') . "\n";
+
+// Validate key with passphrase
+$isValid = KeyGenerator::validatePrivateKey($privateKey, 'passphrase');
+echo "Key is valid: " . ($isValid ? 'Yes' : 'No') . "\n";
+
+// Get key information
+$keyInfo = KeyGenerator::getKeyInfo($privateKey, 'passphrase');
+echo "Key info: " . json_encode($keyInfo, JSON_PRETTY_PRINT) . "\n";
+/*
+{
+    "bits": 2048,
+    "type": "RSA",
+    "encrypted": true
+}
+*/
+```
+
+### Command Line Key Generation
+
+```bash
+# Generate encrypted private key
+openssl genrsa -aes256 -out private_encrypted.key 2048
+# Enter passphrase when prompted
+
+# Generate public key
+openssl rsa -in private_encrypted.key -pubout -out public.key
+# Enter passphrase when prompted
+```
+## Payment Processing
+
+### Direct Payment
 
 ```php
 // Create session
@@ -67,7 +174,7 @@ $payment = $novaPay->addPayment($session['session_id'], [
 header('Location: ' . $payment['checkout_url']);
 ```
 
-### 3. Hold Payment (with merchant confirmation)
+### Hold Payment (with merchant confirmation)
 
 ```php
 // Create session and payment with hold
@@ -92,7 +199,7 @@ $result = $novaPay->completeHold($session['session_id']);
 $result = $novaPay->completeHold($session['session_id'], 150.00);
 ```
 
-### 4. Secure Purchase (with Nova Poshta delivery)
+### Secure Purchase (with Nova Poshta delivery)
 
 ```php
 $session = $novaPay->createSession([
@@ -120,21 +227,21 @@ $result = $novaPay->confirmDelivery($session['session_id']);
 // Response will contain tracking number: $result['ttn']
 ```
 
-### 5. Check Payment Status
+### Check Payment Status
 
 ```php
 $status = $novaPay->getStatus($session['session_id']);
 echo "Status: " . $status['status']; // paid, holded, failed, etc.
 ```
 
-### 6. Cancel/Refund
+### Cancel/Refund
 
 ```php
 // Cancel hold or refund paid payment
 $result = $novaPay->void($session['session_id']);
 ```
 
-### 7. Handle Callback Requests
+### Handle Callback Requests
 
 ```php
 // callback.php

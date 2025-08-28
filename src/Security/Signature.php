@@ -7,17 +7,24 @@ namespace Tibezh\NovapayPhp\Security;
 use Tibezh\NovapayPhp\Exceptions\SignatureException;
 
 /**
- * Class for handling RSA signatures
+ * Class for handling RSA signatures with optional passphrase support
  */
 class Signature
 {
     private string $privateKey;
     private string $publicKey;
+    private ?string $passphrase;
 
-    public function __construct(string $privateKey, string $publicKey)
+    /**
+     * @param string $privateKey Private key content
+     * @param string $publicKey Public key content
+     * @param string|null $passphrase Passphrase for encrypted private key
+     */
+    public function __construct(string $privateKey, string $publicKey, ?string $passphrase = null)
     {
         $this->privateKey = $privateKey;
         $this->publicKey = $publicKey;
+        $this->passphrase = $passphrase;
     }
 
     /**
@@ -29,9 +36,11 @@ class Signature
     {
         $dataString = $this->arrayToString($data);
 
-        $privateKeyResource = openssl_pkey_get_private($this->privateKey);
+        // Load private key with optional passphrase
+        $privateKeyResource = $this->loadPrivateKey();
+
         if (!$privateKeyResource) {
-            throw new SignatureException('Invalid private key');
+            throw new SignatureException('Invalid private key or incorrect passphrase');
         }
 
         $signature = '';
@@ -62,6 +71,90 @@ class Signature
         $result = openssl_verify($dataString, $signatureDecoded, $publicKeyResource, OPENSSL_ALGO_SHA256);
 
         return $result === 1;
+    }
+
+    /**
+     * Load private key with optional passphrase
+     *
+     * @return \OpenSSLAsymmetricKey|false
+     */
+    private function loadPrivateKey()
+    {
+        if ($this->passphrase !== null && $this->passphrase !== '') {
+            // Load encrypted private key with passphrase
+            return openssl_pkey_get_private($this->privateKey, $this->passphrase);
+        } else {
+            // Load unencrypted private key
+            return openssl_pkey_get_private($this->privateKey);
+        }
+    }
+
+    /**
+     * Validate private key and passphrase combination
+     *
+     * @throws SignatureException
+     */
+    public function validatePrivateKey(): bool
+    {
+        $privateKeyResource = $this->loadPrivateKey();
+
+        if (!$privateKeyResource) {
+            if ($this->passphrase !== null) {
+                throw new SignatureException('Invalid private key or incorrect passphrase');
+            } else {
+                throw new SignatureException('Invalid private key');
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if private key is encrypted
+     */
+    public function isPrivateKeyEncrypted(): bool
+    {
+        // Try to load without passphrase
+        $resource = openssl_pkey_get_private($this->privateKey);
+
+        if ($resource === false) {
+            // Check if it's due to encryption
+            $errors = [];
+            while ($error = openssl_error_string()) {
+                $errors[] = $error;
+            }
+
+            // Look for encryption-related error messages
+            $errorString = implode(' ', $errors);
+            if (strpos($errorString, 'bad decrypt') !== false ||
+                strpos($errorString, 'PEM routines') !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Generate test signature to validate configuration
+     *
+     * @return array{signature: string, data: array<string, mixed>}
+     */
+    public function createTestSignature(): array
+    {
+        $testData = [
+            'test' => true,
+            'timestamp' => time(),
+            'merchant_id' => 'test_merchant',
+            'amount' => 100.00,
+        ];
+
+        $signature = $this->createSignature($testData);
+
+        return [
+            'signature' => $signature,
+            'data' => $testData,
+        ];
     }
 
     /**

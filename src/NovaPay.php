@@ -17,6 +17,7 @@ class NovaPay
 
     private string $merchantId;
     private string $privateKey;
+    private ?string $passphrase;
     private string $publicKey;
     private string $baseUrl;
     private Signature $signature;
@@ -26,14 +27,18 @@ class NovaPay
      * @param string $privateKey Path to private key file or key content
      * @param string $publicKey NovaPay public key content
      * @param bool $sandbox Use sandbox environment
+     * @param string|null $passphrase Passphrase for private key (if encrypted)
      */
     public function __construct(
         string $merchantId,
         string $privateKey,
         string $publicKey,
-        bool $sandbox = true
+        bool $sandbox = true,
+        ?string $passphrase = null
     ) {
         $this->merchantId = $merchantId;
+        $this->passphrase = $passphrase;
+
         $privateKey = $this->loadKey($privateKey);
         if (!$privateKey) {
             throw new NovaPayException('Private key not found');
@@ -41,7 +46,9 @@ class NovaPay
         $this->privateKey = $privateKey;
         $this->publicKey = $publicKey;
         $this->baseUrl = $sandbox ? self::SANDBOX_URL : self::PRODUCTION_URL;
-        $this->signature = new Signature($this->privateKey, $this->publicKey);
+
+        // Pass passphrase to Signature class
+        $this->signature = new Signature($this->privateKey, $this->publicKey, $this->passphrase);
     }
 
     /**
@@ -191,4 +198,5 @@ class NovaPay
         }
         return $key;
     }
+
 }
