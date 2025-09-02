@@ -34,9 +34,12 @@ class Signature
      */
     public function createSignature(array $data): string
     {
-        $dataString = $this->arrayToString($data);
+        // Remove x-sign field if present
+        unset($data['x-sign']);
 
-        // Load private key with optional passphrase
+        // Convert to JSON (as expected by NovaPay)
+        $dataString = json_encode($data, JSON_UNESCAPED_UNICODE);
+
         $privateKeyResource = $this->loadPrivateKey();
 
         if (!$privateKeyResource) {
@@ -44,7 +47,7 @@ class Signature
         }
 
         $signature = '';
-        $success = openssl_sign($dataString, $signature, $privateKeyResource, OPENSSL_ALGO_SHA256);
+        $success = openssl_sign($dataString, $signature, $privateKeyResource, OPENSSL_ALGO_SHA1);
 
         if (!$success) {
             throw new SignatureException('Failed to create signature');
@@ -60,7 +63,11 @@ class Signature
      */
     public function verifySignature(array $data, string $signature): bool
     {
-        $dataString = $this->arrayToString($data);
+        // Remove x-sign field if present
+        unset($data['x-sign']);
+
+        // Convert to JSON for verification
+        $dataString = json_encode($data, JSON_UNESCAPED_UNICODE);
         $signatureDecoded = base64_decode($signature);
 
         $publicKeyResource = openssl_pkey_get_public($this->publicKey);
@@ -68,7 +75,7 @@ class Signature
             throw new SignatureException('Invalid public key');
         }
 
-        $result = openssl_verify($dataString, $signatureDecoded, $publicKeyResource, OPENSSL_ALGO_SHA256);
+        $result = openssl_verify($dataString, $signatureDecoded, $publicKeyResource, OPENSSL_ALGO_SHA1);
 
         return $result === 1;
     }
@@ -126,8 +133,9 @@ class Signature
 
             // Look for encryption-related error messages
             $errorString = implode(' ', $errors);
-            if (strpos($errorString, 'bad decrypt') !== false ||
-                strpos($errorString, 'PEM routines') !== false) {
+            if (str_contains($errorString, 'bad decrypt')
+              || str_contains($errorString, 'PEM routines')
+            ) {
                 return true;
             }
         }
@@ -137,55 +145,22 @@ class Signature
 
     /**
      * Generate test signature to validate configuration
-     *
-     * @return array{signature: string, data: array<string, mixed>}
      */
     public function createTestSignature(): array
     {
         $testData = [
-            'test' => true,
-            'timestamp' => time(),
-            'merchant_id' => 'test_merchant',
-            'amount' => 100.00,
+          'test' => true,
+          'timestamp' => time(),
+          'merchant_id' => 'test_merchant',
+          'amount' => 100.00,
         ];
 
         $signature = $this->createSignature($testData);
 
         return [
-            'signature' => $signature,
-            'data' => $testData,
+          'signature' => $signature,
+          'data' => $testData,
         ];
     }
 
-    /**
-     * Convert array to string for signature
-     *
-     * @param array<string, mixed> $data
-     */
-    private function arrayToString(array $data): string
-    {
-        // Remove signature field if present
-        unset($data['x-sign']);
-
-        // Sort by keys
-        ksort($data);
-
-        // Convert to string
-        $parts = [];
-        foreach ($data as $key => $value) {
-            if (is_array($value)) {
-                $value = $this->arrayToString($value);
-            } elseif (is_bool($value)) {
-                $value = $value ? 'true' : 'false';
-            } elseif ($value === null) {
-                $value = '';
-            } else {
-                $value = (string) $value;
-            }
-
-            $parts[] = $key . '=' . $value;
-        }
-
-        return implode('&', $parts);
-    }
 }
