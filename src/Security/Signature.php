@@ -38,7 +38,7 @@ class Signature
         unset($data['x-sign']);
 
         // Convert to JSON (as expected by NovaPay)
-        $dataString = json_encode($data, JSON_UNESCAPED_UNICODE);
+        $dataString = (string) json_encode($data, JSON_UNESCAPED_UNICODE);
 
         $privateKeyResource = $this->loadPrivateKey();
 
@@ -67,7 +67,7 @@ class Signature
         unset($data['x-sign']);
 
         // Convert to JSON for verification
-        $dataString = json_encode($data, JSON_UNESCAPED_UNICODE);
+        $dataString = (string) json_encode($data, JSON_UNESCAPED_UNICODE);
         $signatureDecoded = base64_decode($signature);
 
         $publicKeyResource = openssl_pkey_get_public($this->publicKey);
@@ -145,6 +145,8 @@ class Signature
 
     /**
      * Generate test signature to validate configuration
+     *
+     * @return array<string, mixed>
      */
     public function createTestSignature(): array
     {

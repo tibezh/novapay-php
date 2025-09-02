@@ -199,8 +199,11 @@ class SignatureTest extends TestCase
 
         $signature = $this->signature->createSignature($data);
 
-        $jsonString = json_encode($data, JSON_UNESCAPED_UNICODE);
+        $jsonString = (string) json_encode($data, JSON_UNESCAPED_UNICODE);
         $privateKeyResource = openssl_pkey_get_private($this->getTestPrivateKey());
+        if (!($privateKeyResource instanceof \OpenSSLAsymmetricKey)) {
+          throw new \RuntimeException('Failed to load private key');
+        }
 
         $binarySignature = '';
         openssl_sign($jsonString, $binarySignature, $privateKeyResource, OPENSSL_ALGO_SHA1);
@@ -215,8 +218,11 @@ class SignatureTest extends TestCase
 
         $ourSignature = $this->signature->createSignature($data);
 
-        $jsonString = json_encode($data, JSON_UNESCAPED_UNICODE);
+        $jsonString = (string) json_encode($data, JSON_UNESCAPED_UNICODE);
         $privateKeyResource = openssl_pkey_get_private($this->getTestPrivateKey());
+        if (!($privateKeyResource instanceof \OpenSSLAsymmetricKey)) {
+          throw new \RuntimeException('Failed to load private key');
+        }
 
         $binarySignature = '';
         openssl_sign($jsonString, $binarySignature, $privateKeyResource, OPENSSL_ALGO_SHA1);
@@ -248,8 +254,8 @@ class SignatureTest extends TestCase
 
         $this->assertTrue($isValid);
 
-        $jsonString = json_encode($data, JSON_UNESCAPED_UNICODE);
-        $decodedData = json_decode($jsonString, true);
+        $jsonString = (string) json_encode($data, JSON_UNESCAPED_UNICODE);
+        $decodedData = (string) json_decode($jsonString, true);
 
         $this->assertEquals($data, $decodedData);
     }
