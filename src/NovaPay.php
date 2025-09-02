@@ -199,4 +199,28 @@ class NovaPay
         return $key;
     }
 
+    /**
+     * Generate a cURL command for making a POST request with the provided endpoint and data.
+     *
+     * @param string $endpoint The API endpoint the request is targeting.
+     * @param array<string, mixed> $data The data to be included in the request payload.
+     *
+     * @return string The formatted cURL command as a string.
+     */
+    public function getCurlCommand(string $endpoint, array $data): string
+    {
+        $data['merchant_id'] = $this->merchantId;
+        $url = $this->baseUrl . $endpoint;
+        $signature = $this->signature->createSignature($data);
+        $json = json_encode($data);
+
+        return "curl -X POST '{$url}' \\\n" .
+          "  -H 'Content-Type: application/json' \\\n" .
+          "  -H 'x-sign: {$signature}' \\\n" .
+          "  -d '{$json}' \\\n" .
+          "  --verbose \\\n" .
+          "  --include \\\n" .
+          '  --write-out "\\n\\n=== TIMING INFO ===\\nHTTP: %{http_code}\\nTime: %{time_total}s\\nSize: %{size_download}b\\n"';
+    }
+
 }
