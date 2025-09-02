@@ -85,28 +85,6 @@ class SignatureTest extends TestCase
         $this->assertFalse($isValid);
     }
 
-    public function test_array_to_string_conversion(): void
-    {
-        $data = [
-          'z_last' => 'value_z',
-          'a_first' => 'value_a',
-          'b_middle' => 'value_b'
-        ];
-
-        $signature1 = $this->signature->createSignature($data);
-
-        // Same data, different order
-        $dataReordered = [
-          'b_middle' => 'value_b',
-          'z_last' => 'value_z',
-          'a_first' => 'value_a'
-        ];
-
-        $signature2 = $this->signature->createSignature($dataReordered);
-
-        $this->assertEquals($signature1, $signature2);
-    }
-
     public function test_handles_nested_arrays(): void
     {
         $data = [
@@ -160,10 +138,11 @@ class SignatureTest extends TestCase
 
         $signature = $this->signature->createSignature($data);
 
-        // Verify that x-sign field doesn't affect signature
+        // Verify that x-sign field doesn't affect signature in JSON format
         $dataWithoutSign = ['amount' => 100];
         $signatureWithoutSign = $this->signature->createSignature($dataWithoutSign);
 
+        // Since we're using JSON, the x-sign removal should make signatures equal
         $this->assertEquals($signature, $signatureWithoutSign);
     }
 
@@ -209,4 +188,76 @@ class SignatureTest extends TestCase
 
         $this->assertNotEquals($signature1, $signature2);
     }
+
+    public function test_uses_json_format_for_signature(): void
+    {
+        $data = [
+          'merchant_id' => 'test_merchant',
+          'amount' => 100.50,
+          'currency' => 'UAH'
+        ];
+
+        $signature = $this->signature->createSignature($data);
+
+        $jsonString = (string) json_encode($data, JSON_UNESCAPED_UNICODE);
+        $privateKeyResource = openssl_pkey_get_private($this->getTestPrivateKey());
+        if (!($privateKeyResource instanceof \OpenSSLAsymmetricKey)) {
+            throw new \RuntimeException('Failed to load private key');
+        }
+
+        $binarySignature = '';
+        openssl_sign($jsonString, $binarySignature, $privateKeyResource, OPENSSL_ALGO_SHA1);
+        $expectedSignature = base64_encode($binarySignature);
+
+        $this->assertEquals($expectedSignature, $signature);
+    }
+
+    public function test_uses_sha1_algorithm(): void
+    {
+        $data = ['test' => 'data'];
+
+        $ourSignature = $this->signature->createSignature($data);
+
+        $jsonString = (string) json_encode($data, JSON_UNESCAPED_UNICODE);
+        $privateKeyResource = openssl_pkey_get_private($this->getTestPrivateKey());
+        if (!($privateKeyResource instanceof \OpenSSLAsymmetricKey)) {
+            throw new \RuntimeException('Failed to load private key');
+        }
+
+        $binarySignature = '';
+        openssl_sign($jsonString, $binarySignature, $privateKeyResource, OPENSSL_ALGO_SHA1);
+        $sha1Signature = base64_encode($binarySignature);
+
+        $this->assertEquals($sha1Signature, $ourSignature);
+
+        $binarySignatureSha256 = '';
+        openssl_sign($jsonString, $binarySignatureSha256, $privateKeyResource, OPENSSL_ALGO_SHA256);
+        $sha256Signature = base64_encode($binarySignatureSha256);
+
+        $this->assertNotEquals($sha256Signature, $ourSignature);
+    }
+
+    public function test_json_format_preserves_data_types(): void
+    {
+        $data = [
+          'string_field' => 'test',
+          'int_field' => 100,
+          'float_field' => 100.50,
+          'bool_true' => true,
+          'bool_false' => false,
+          'null_field' => null,
+          'array_field' => ['nested' => 'value']
+        ];
+
+        $signature = $this->signature->createSignature($data);
+        $isValid = $this->signature->verifySignature($data, $signature);
+
+        $this->assertTrue($isValid);
+
+        $jsonString = (string) json_encode($data, JSON_UNESCAPED_UNICODE);
+        $decodedData = json_decode($jsonString, true);
+
+        $this->assertEquals($data, $decodedData);
+    }
+
 }
