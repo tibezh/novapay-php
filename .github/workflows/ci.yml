@@ -44,7 +44,7 @@ jobs:
 
       - name: Check PHP CS
         run: composer run-script lint
-  
+
   type-checker:
     name: Type Checker
     runs-on: ubuntu-latest
@@ -58,7 +58,7 @@ jobs:
       - name: PHPStan
         run: composer run-script phpstan
 
-  tests:
+  unit-tests:
     runs-on: ubuntu-latest
 
     strategy:
@@ -66,7 +66,7 @@ jobs:
         php-versions: ["8.3", "8.4"]
 
     name: Tests PHP with ${{ matrix.php-versions }}
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -81,10 +81,16 @@ jobs:
         run: composer install --prefer-dist --no-progress
 
       - name: Run tests and collect coverage
-        run: vendor/bin/phpunit --coverage-clover coverage.xml
+        run: vendor/bin/phpunit --coverage-clover coverage.xml --log-junit junit.xml
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: tibezh/novapay-php
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}

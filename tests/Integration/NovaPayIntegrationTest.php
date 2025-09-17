@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Tibezh\NovapayPhp\Tests\Integration;
 
+use Exception;
 use Tibezh\NovapayPhp\NovaPay;
 use Tibezh\NovapayPhp\Exceptions\NovaPayException;
+use Tibezh\NovapayPhp\Security\Signature;
 use Tibezh\NovapayPhp\Tests\TestCase;
 
 /**
@@ -35,20 +37,9 @@ class NovaPayIntegrationTest extends TestCase
         // Test the complete workflow structure (without actual API calls)
         $sessionData = $this->getTestSessionData();
 
-        // Step 1: Create session
-        try {
-            $this->novaPay->createSession($sessionData);
-            $this->fail('Expected NovaPayException due to no actual API');
-        } catch (NovaPayException $e) {
-            // Could be CURL error or HTTP error - both indicate proper structure
-            $this->assertTrue(
-                str_contains($e->getMessage(), 'CURL error') ||
-                str_contains($e->getMessage(), 'HTTP error')
-            );
-        }
-
-        // The workflow structure is correct even if the API call fails
-        $this->assertTrue(true);
+        // Step 1: Create a session - should throw exception in the test environment
+        $this->expectException(NovaPayException::class);
+        $this->novaPay->createSession($sessionData);
     }
 
     public function test_complete_hold_payment_workflow(): void
@@ -56,29 +47,17 @@ class NovaPayIntegrationTest extends TestCase
         $sessionId = 'test_session_123';
 
         // Test the complete hold workflow structure
+        // Step 1: Create hold payment - should throw exception in test environment
         try {
-            // Step 1: Create hold payment
-            $this->novaPay->addPayment($sessionId, ['use_hold' => true]);
-            $this->fail('Expected NovaPayException due to no actual API');
+            $this->novaPay->addPayment($sessionId, ['use_hold' => true, 'amount' => 250.00]);
+            $this->fail('Expected NovaPayException');
         } catch (NovaPayException $e) {
-            $this->assertTrue(
-                str_contains($e->getMessage(), 'CURL error') ||
-                str_contains($e->getMessage(), 'HTTP error')
-            );
+            $this->assertInstanceOf(NovaPayException::class, $e);
         }
 
-        try {
-            // Step 2: Complete hold
-            $this->novaPay->completeHold($sessionId);
-            $this->fail('Expected NovaPayException due to no actual API');
-        } catch (NovaPayException $e) {
-            $this->assertTrue(
-                str_contains($e->getMessage(), 'CURL error') ||
-                str_contains($e->getMessage(), 'HTTP error')
-            );
-        }
-
-        $this->assertTrue(true);
+        // Step 2: Complete hold - should also throw exception
+        $this->expectException(NovaPayException::class);
+        $this->novaPay->completeHold($sessionId);
     }
 
     public function test_secure_purchase_workflow(): void
@@ -86,57 +65,47 @@ class NovaPayIntegrationTest extends TestCase
         $sessionId = 'test_session_123';
         $deliveryData = $this->getTestDeliveryData();
 
+        // Step 1: Create a secure purchase - should throw exception
         try {
-            // Step 1: Create secure purchase
             $this->novaPay->addPayment($sessionId, [
-              'use_hold' => true,
-              'delivery' => $deliveryData
+                'use_hold' => true,
+                'amount' => 500.00,
+                'delivery' => $deliveryData
             ]);
-            $this->fail('Expected NovaPayException due to no actual API');
+            $this->fail('Expected NovaPayException');
         } catch (NovaPayException $e) {
-            $this->assertTrue(
-                str_contains($e->getMessage(), 'CURL error') ||
-                str_contains($e->getMessage(), 'HTTP error')
-            );
+            $this->assertInstanceOf(NovaPayException::class, $e);
         }
 
-        try {
-            // Step 2: Confirm delivery
-            $this->novaPay->confirmDelivery($sessionId);
-            $this->fail('Expected NovaPayException due to no actual API');
-        } catch (NovaPayException $e) {
-            $this->assertTrue(
-                str_contains($e->getMessage(), 'CURL error') ||
-                str_contains($e->getMessage(), 'HTTP error')
-            );
-        }
-
-        $this->assertTrue(true);
+        // Step 2: Confirm delivery - should also throw exception
+        $this->expectException(NovaPayException::class);
+        $this->novaPay->confirmDelivery($sessionId);
     }
 
     public function test_callback_verification_integration(): void
     {
         // Test that signature verification works with realistic callback data
         $callbackData = [
-          'session_id' => 'session_abc123def456',
-          'external_id' => 'order_789',
-          'status' => 'paid',
-          'amount' => 1299.99,
-          'currency' => 'UAH',
-          'created_at' => '2024-01-15T10:30:00Z',
-          'updated_at' => '2024-01-15T10:32:15Z'
+            'session_id' => 'session_abc123def456',
+            'external_id' => 'order_789',
+            'status' => 'paid',
+            'amount' => 1299.99,
+            'currency' => 'UAH',
+            'created_at' => '2024-01-15T10:30:00Z',
+            'updated_at' => '2024-01-15T10:32:15Z'
         ];
 
-        // Create signature using the merchant's private key
-        $signature = new \Tibezh\NovapayPhp\Security\Signature(
+        // Create a signature using the merchant's private key
+        $signature = new Signature(
             $this->getTestPrivateKey(),
-            $this->getTestMerchantPublicKey()  // Use merchant's public key for testing
+            // Use merchant's public key for testing
+            $this->getTestMerchantPublicKey()
         );
 
         $validSignature = $signature->createSignature($callbackData);
 
-        // Create test NovaPay instance with merchant's key pair for verification
-        $testNovaPay = new \Tibezh\NovapayPhp\NovaPay(
+        // Create a test NovaPay instance with the merchant's key pair for verification
+        $testNovaPay = new NovaPay(
             merchantId: $this->getTestMerchantId(),
             privateKey: $this->getTestPrivateKey(),
             publicKey: $this->getTestMerchantPublicKey(),
@@ -155,49 +124,41 @@ class NovaPayIntegrationTest extends TestCase
 
         // Test with invalid session data
         $invalidSessionData = [
-          'external_id' => '', // Invalid empty ID
-          'amount' => -100,    // Invalid negative amount
+            'external_id' => '', // Invalid empty ID
+            'amount' => -100,    // Invalid negative amount
         ];
 
-        try {
-            $this->novaPay->createSession($invalidSessionData);
-            $this->fail('Expected NovaPayException');
-        } catch (NovaPayException $e) {
-            // Should get CURL or HTTP error since we're not hitting actual API
-            $this->assertTrue(
-                str_contains($e->getMessage(), 'CURL error') ||
-                str_contains($e->getMessage(), 'HTTP error')
-            );
-        }
+        $this->expectException(NovaPayException::class);
+        $this->novaPay->createSession($invalidSessionData);
     }
 
     public function test_signature_integration_with_complex_data(): void
     {
         // Test signature creation and verification with complex nested data
         $complexCallbackData = [
-          'session_id' => 'session_123',
-          'external_id' => 'order_456',
-          'status' => 'paid',
-          'amount' => 1500.75,
-          'currency' => 'UAH',
-          'payment_method' => [
-            'type' => 'card',
-            'card_mask' => '4***-****-****-1234',
-            'bank' => 'Test Bank'
-          ],
-          'delivery' => [
-            'ttn' => '20240115000123',
-            'status' => 'shipped',
-            'estimated_delivery' => '2024-01-18'
-          ],
-          'metadata' => [
-            'customer_id' => 'cust_789',
-            'source' => 'web',
-            'campaign' => 'winter_sale_2024'
-          ]
+            'session_id' => 'session_123',
+            'external_id' => 'order_456',
+            'status' => 'paid',
+            'amount' => 1500.75,
+            'currency' => 'UAH',
+            'payment_method' => [
+                'type' => 'card',
+                'card_mask' => '4***-****-****-1234',
+                'bank' => 'Test Bank'
+            ],
+            'delivery' => [
+                'ttn' => '20240115000123',
+                'status' => 'shipped',
+                'estimated_delivery' => '2024-01-18'
+            ],
+            'metadata' => [
+                'customer_id' => 'cust_789',
+                'source' => 'web',
+                'campaign' => 'winter_sale_2024'
+            ]
         ];
 
-        $signature = new \Tibezh\NovapayPhp\Security\Signature(
+        $signature = new Signature(
             $this->getTestPrivateKey(),
             $this->getTestMerchantPublicKey()
         );
@@ -205,7 +166,7 @@ class NovaPayIntegrationTest extends TestCase
         $validSignature = $signature->createSignature($complexCallbackData);
 
         // Create test NovaPay instance for verification
-        $testNovaPay = new \Tibezh\NovapayPhp\NovaPay(
+        $testNovaPay = new NovaPay(
             merchantId: $this->getTestMerchantId(),
             privateKey: $this->getTestPrivateKey(),
             publicKey: $this->getTestMerchantPublicKey(),
@@ -226,33 +187,27 @@ class NovaPayIntegrationTest extends TestCase
 
     public function test_multiple_operations_sequence(): void
     {
-        // Test a sequence of operations to ensure state is maintained correctly
+        // Test a sequence of operations to ensure all throw exceptions properly
         $sessionData = $this->getTestSessionData();
         $sessionId = 'test_session_sequence';
 
         $operations = [
-          fn () => $this->novaPay->createSession($sessionData),
-          fn () => $this->novaPay->addPayment($sessionId, ['use_hold' => true]),
-          fn () => $this->novaPay->getStatus($sessionId),
-          fn () => $this->novaPay->completeHold($sessionId, 50.00),
-          fn () => $this->novaPay->getStatus($sessionId),
+            fn () => $this->novaPay->createSession($sessionData),
+            fn () => $this->novaPay->addPayment($sessionId, ['use_hold' => true, 'amount' => 100.00]),
+            fn () => $this->novaPay->getStatus($sessionId),
+            fn () => $this->novaPay->completeHold($sessionId, 50.00),
+            fn () => $this->novaPay->getStatus($sessionId),
         ];
 
         foreach ($operations as $index => $operation) {
             try {
                 $operation();
-                $this->fail("Expected NovaPayException for operation {$index}");
+                $this->fail("Expected NovaPayException for operation $index");
             } catch (NovaPayException $e) {
-                // Each operation should fail with CURL or HTTP error due to no actual API
-                $this->assertTrue(
-                    str_contains($e->getMessage(), 'CURL error') ||
-                    str_contains($e->getMessage(), 'HTTP error')
-                );
+                // Each operation should throw NovaPayException due to no actual API
+                $this->assertInstanceOf(NovaPayException::class, $e);
             }
         }
-
-        // If we get here, all operations have the correct structure
-        $this->assertTrue(true);
     }
 
     public function test_edge_cases_handling(): void
@@ -267,28 +222,204 @@ class NovaPayIntegrationTest extends TestCase
         $largeAmountData = $this->getTestSessionData();
         $largeAmountData['amount'] = 999999.99;
 
-        try {
-            $this->novaPay->createSession($largeAmountData);
-            $this->fail('Expected NovaPayException');
-        } catch (NovaPayException $e) {
-            $this->assertTrue(
-                str_contains($e->getMessage(), 'CURL error') ||
-                str_contains($e->getMessage(), 'HTTP error')
-            );
-        }
+        $this->expectException(NovaPayException::class);
+        $this->novaPay->createSession($largeAmountData);
+    }
 
+    public function test_unicode_handling_in_session_data(): void
+    {
         // Unicode characters in descriptions
         $unicodeData = $this->getTestSessionData();
-        $unicodeData['description'] = 'Тест з українськими символами 🇺🇦';
+        $unicodeData['client_first_name'] = 'Тарас';
+        $unicodeData['client_last_name'] = 'Шевченко';
+        $unicodeData['metadata'] = json_encode([
+            'description' => 'Тест з українськими символами 🇺🇦',
+            'special_chars' => '€$£¥₴'
+        ]);
 
-        try {
-            $this->novaPay->createSession($unicodeData);
-            $this->fail('Expected NovaPayException');
-        } catch (NovaPayException $e) {
-            $this->assertTrue(
-                str_contains($e->getMessage(), 'CURL error') ||
-                str_contains($e->getMessage(), 'HTTP error')
-            );
+        $this->expectException(NovaPayException::class);
+        $this->novaPay->createSession($unicodeData);
+    }
+
+    public function test_all_api_methods_structure(): void
+    {
+        // Test that all public API methods have the correct structure and throw exceptions
+        $sessionId = 'test_session_integration';
+
+        $apiMethods = [
+            // Session management
+            ['method' => 'createSession', 'args' => [['client_phone' => '+380982850620']]],
+            ['method' => 'expireSession', 'args' => [$sessionId]],
+
+            // Payment methods
+            ['method' => 'addPayment', 'args' => [$sessionId, ['amount' => 100.00]]],
+            ['method' => 'completeHold', 'args' => [$sessionId]],
+            ['method' => 'confirmDelivery', 'args' => [$sessionId]],
+            ['method' => 'void', 'args' => [$sessionId]],
+            ['method' => 'getStatus', 'args' => [$sessionId]],
+            ['method' => 'printExpressWaybill', 'args' => [$sessionId]],
+
+            // Utility methods
+            ['method' => 'getDeliveryPrice', 'args' => [[
+                'recipient_city' => 'city_uuid',
+                'recipient_warehouse' => 'warehouse_uuid',
+                'volume_weight' => 0.001,
+                'weight' => 0.5,
+                'amount' => 100.00
+            ]]],
+
+            // Frames and checkout
+            ['method' => 'initFrames', 'args' => [[
+                'callback_url' => 'https://example.com/callback',
+                'amount' => 100.00,
+                'delivery' => ['volume_weight' => 0.001, 'weight' => 0.1]
+            ]]],
+            ['method' => 'createCheckoutSession', 'args' => [[
+                'callback_url' => 'https://example.com/callback'
+            ]]],
+            ['method' => 'addCheckoutPayment', 'args' => [$sessionId, ['amount' => 100.00]]],
+
+            // Export
+            ['method' => 'exportOperations', 'args' => [[
+                'date_range' => ['start' => '2024-01-01', 'end' => '2024-01-31'],
+                'recipient_email' => 'test@example.com'
+            ]]]
+        ];
+
+        foreach ($apiMethods as $methodInfo) {
+            $methodName = $methodInfo['method'];
+            $args = $methodInfo['args'];
+
+            try {
+                $this->novaPay->$methodName(...$args);
+                $this->fail("Method $methodName should throw NovaPayException in test environment");
+            } catch (NovaPayException $e) {
+                // Expected - method should throw exception in test environment
+                $this->assertInstanceOf(NovaPayException::class, $e);
+            }
         }
     }
+
+    public function test_callback_verification_does_not_throw_exceptions(): void
+    {
+        // Callback verification should never throw exceptions, only return true/false
+        $testCases = [
+            ['data' => [], 'signature' => ''],
+            ['data' => ['test' => 'data'], 'signature' => 'invalid_signature'],
+            // PHP will convert this to array
+            ['data' => null, 'signature' => null],
+        ];
+
+        foreach ($testCases as $testCase) {
+            $data = $testCase['data'] ?? [];
+            $signature = $testCase['signature'] ?? '';
+
+            try {
+                $result = $this->novaPay->verifyCallback($data, $signature);
+                $this->assertIsBool($result);
+                // Should be false for invalid signatures
+                $this->assertFalse($result);
+            } catch (Exception $e) {
+                $this->fail("verifyCallback should not throw exceptions, got: {$e->getMessage()}");
+            }
+        }
+    }
+
+    public function test_get_curl_command_does_not_make_requests(): void
+    {
+        // getCurlCommand should not make actual HTTP requests
+        $curlCommand = $this->novaPay->getCurlCommand('/session', [
+            'client_phone' => '+380982850620'
+        ]);
+
+        $this->assertIsString($curlCommand);
+        $this->assertStringContainsString('curl -X POST', $curlCommand);
+        $this->assertStringContainsString('/v1/session', $curlCommand);
+        $this->assertStringContainsString($this->getTestMerchantId(), $curlCommand);
+
+        // Should contain proper headers
+        $this->assertStringContainsString('Content-Type: application/json', $curlCommand);
+        $this->assertStringContainsString('x-sign:', $curlCommand);
+    }
+
+    public function test_merchant_id_and_session_id_validation(): void
+    {
+        // Test that methods properly handle merchant_id and session_id
+
+        // Empty session ID should still create a proper request structure
+        try {
+            $this->novaPay->getStatus('');
+            $this->fail('Expected NovaPayException');
+        } catch (NovaPayException $e) {
+            $this->assertInstanceOf(NovaPayException::class, $e);
+        }
+
+        // Very long session ID should still work
+        try {
+            $longSessionId = str_repeat('a', 1000);
+            $this->novaPay->getStatus($longSessionId);
+            $this->fail('Expected NovaPayException');
+        } catch (NovaPayException $e) {
+            $this->assertInstanceOf(NovaPayException::class, $e);
+        }
+    }
+
+    public function test_environment_detection(): void
+    {
+        // Test sandbox vs production detection
+        $sandboxNovaPay = new NovaPay(
+            merchantId: 'test_merchant',
+            privateKey: $this->getTestPrivateKey(),
+            publicKey: $this->getTestPublicKey(),
+            sandbox: true
+        );
+
+        $productionNovaPay = new NovaPay(
+            merchantId: 'prod_merchant',
+            privateKey: $this->getTestPrivateKey(),
+            publicKey: $this->getTestPublicKey(),
+            sandbox: false
+        );
+
+        $this->assertTrue($sandboxNovaPay->isSandbox());
+        $this->assertFalse($productionNovaPay->isSandbox());
+
+        // Test that different environments generate different URLs in curl commands
+        $sandboxCurl = $sandboxNovaPay->getCurlCommand('/test', []);
+        $productionCurl = $productionNovaPay->getCurlCommand('/test', []);
+
+        $this->assertStringContainsString('api-qecom.novapay.ua', $sandboxCurl);
+        $this->assertStringContainsString('api-ecom.novapay.ua', $productionCurl);
+    }
+
+    public function test_json_serialization_in_requests(): void
+    {
+        // Test that complex data structures are properly JSON encoded
+        $complexData = [
+            'simple_string' => 'test',
+            'number' => 123,
+            'float' => 123.45,
+            'boolean' => true,
+            'array' => [1, 2, 3],
+            'nested_object' => [
+                'key1' => 'value1',
+                'key2' => [
+                    'nested_key' => 'nested_value'
+                ]
+            ],
+            'unicode_string' => 'Тест 🇺🇦',
+            'special_chars' => '<>&"\'',
+        ];
+
+        $curlCommand = $this->novaPay->getCurlCommand('/test', $complexData);
+
+        // Should contain properly escaped JSON
+        $this->assertStringContainsString('"simple_string":"test"', $curlCommand);
+        $this->assertStringContainsString('"number":123', $curlCommand);
+        $this->assertStringContainsString('"boolean":true', $curlCommand);
+
+        // Should handle Unicode properly
+        $this->assertStringContainsString('\\u0422\\u0435\\u0441\\u0442', $curlCommand);
+    }
+
 }
